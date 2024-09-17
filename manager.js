@@ -1,14 +1,3 @@
-const diceRoll = {
-  100: document.getElementById('D100'),
-   20: document.getElementById('D20'),
-   12: document.getElementById('D12'),
-   10: document.getElementById('D10'),
-    8: document.getElementById('D8'),
-    6: document.getElementById('D6'),
-    4: document.getElementById('D4'),
-    3: document.getElementById('D3')
-}
-
 let diceQty = {
   100: 1,
    20: 1,
@@ -42,162 +31,185 @@ const resultArea = {
     3: document.getElementById('D3R')
 }
 
-const plusDice = {
-  100: document.getElementById('plusD100'),
-   20: document.getElementById('plusD20'),
-   12: document.getElementById('plusD12'),
-   10: document.getElementById('plusD10'),
-    8: document.getElementById('plusD8'),
-    6: document.getElementById('plusD6'),
-    4: document.getElementById('plusD4'),
-    3: document.getElementById('plusD3')
+const judge = {
+  attributeInput: document.getElementById('attribute'),
+
+  area : {
+  0: document.getElementById('judge01'),
+  1: document.getElementById('judge10'),
+  2: document.getElementById('bonusA'),
+  3: document.getElementById('bonusB'),
+  },
+
+  box : {
+    0: document.getElementById('bonusBoxA'),
+    1: document.getElementById('bonusBoxB')
+  },
+
+  result: document.getElementById('judgeR'),
+  rate: document.getElementById('judgeRate')
 }
 
-const minusDice = {
-  100: document.getElementById('minusD100'),
-   20: document.getElementById('minusD20'),
-   12: document.getElementById('minusD12'),
-   10: document.getElementById('minusD10'),
-    8: document.getElementById('minusD8'),
-    6: document.getElementById('minusD6'),
-    4: document.getElementById('minusD4'),
-    3: document.getElementById('minusD3')
+const bonusStates = {
+  4:['#AEFFBD', '#AEFFBD'],
+  3:['#AEFFBD', '#777777'],
+  2:['#777777', '#777777'],
+  1:['#FFABCE', '#777777'],
+  0:['#FFABCE', '#FFABCE']
 }
 
+const rollSound = new Audio('se/rollSound.mp3');
 
-let result = 0;
+let bonus = 0;
 
-plusDice[100].addEventListener('click', () => {
-  ++diceQty[100];
-  diceQtyArea[100].innerText = `${diceQty[100]}D100`;
-})
-minusDice[100].addEventListener('click', () => {
-  if (diceQty[100] > 1) {
-    --diceQty[100];
-    diceQtyArea[100].innerText = `${diceQty[100]}D100`;
+
+function judgeButton () {
+  let attribute = judge.attributeInput.value;
+  let resultBox = 0;
+  let firstRank = 0;
+  let tenthRank = []
+  let finalResult = 0;
+
+  if (0 < attribute && attribute < 1001) {
+
+    //ダイスを個数分ロール
+    for(let i = 0; i < 2 + Math.abs(bonus); ++i){
+      result = 0;
+      resultBox = roll(1, 10) - 1;
+      if(i === 0){
+        firstRank = resultBox
+        judge.area[i].innerText = resultBox;
+      }
+      else{
+        judge.area[i].innerText = resultBox + "0";
+        tenthRank.push(resultBox);
+      }
+    }
+
+    //十の位を並び替え
+    tenthRank.sort(compareFunc);
+
+    //ボーナス，ペナルティを加味して結果を算出
+    if(0 < bonus){
+      finalResult = tenthRank[0] * 10 + firstRank;
+    }
+    else{
+      finalResult = tenthRank[tenthRank.length - 1] * 10 + firstRank;
+    }
+
+    //結果が0の場合，100に修正
+    if(finalResult === 0){
+      finalResult = 100;
+    }
+
+    //結果と能力値を比較して成功率を表示
+    judge.rate.innerText = '';
+    const rateArea = document.createElement('h5');
+
+    if(finalResult <= 5){
+      rateArea.style.cssText = "color: yellow";
+      rateArea.innerText = 'クリティカル!!!';
+    }
+    else if(finalResult <= Math.floor(attribute / 5)){
+      rateArea.style.cssText = "color: lime";
+      rateArea.innerText = 'イクストリーム!!';
+    }
+    else if(finalResult <= Math.floor(attribute / 2)){
+      rateArea.style.cssText = "color: aqua";
+      rateArea.innerText = 'ハード!';
+    }
+    else if(finalResult <= Math.floor(attribute)){
+      rateArea.style.cssText = "color: white";
+      rateArea.innerText = 'レギュラー';
+    }
+    else if(finalResult === 100 || (95 < finalResult)){
+      rateArea.style.cssText = "color: red";
+      rateArea.innerText = 'ファンブル!!!';
+    }
+    else{
+      rateArea.style.cssText = "color: orange";
+      rateArea.innerText = '失敗!';
+    }
+
+    judge.result.innerText = finalResult;
+    judge.rate.appendChild(rateArea);
   }
-})
-
-plusDice[20].addEventListener('click', () => {
-  ++diceQty[20];
-  diceQtyArea[20].innerText = `${diceQty[20]}D20`;
-})
-minusDice[20].addEventListener('click', () => {
-  if (diceQty[20] > 1) {
-    --diceQty[20];
-    diceQtyArea[20].innerText = `${diceQty[20]}D20`;
+  else{
+    diceReset();
+    return;
   }
-})
+}
 
-plusDice[12].addEventListener('click', () => {
-  ++diceQty[12];
-  diceQtyArea[12].innerText = `${diceQty[12]}D12`;
-})
-minusDice[12].addEventListener('click', () => {
-  if (diceQty[12] > 1) {
-    --diceQty[12];
-    diceQtyArea[12].innerText = `${diceQty[12]}D12`;
+//ボーナス・ペナルティボタン
+function bonusButton(fluctuation){
+  bonus = bonus + fluctuation
+  if(2 < bonus){
+    bonus = 2;
   }
-})
-
-plusDice[10].addEventListener('click', () => {
-  ++diceQty[10];
-  diceQtyArea[10].innerText = `${diceQty[10]}D10`;
-})
-minusDice[10].addEventListener('click', () => {
-  if (diceQty[10] > 1) {
-    --diceQty[10];
-    diceQtyArea[10].innerText = `${diceQty[10]}D10`;
+  if(bonus < -2){
+    bonus = -2;
   }
-})
+  bonusUpdate(bonus + 2);
+}
 
-plusDice[8].addEventListener('click', () => {
-  ++diceQty[8];
-  diceQtyArea[8].innerText = `${diceQty[8]}D8`;
-})
-minusDice[8].addEventListener('click', () => {
-  if (diceQty[8] > 1) {
-    --diceQty[8];
-    diceQtyArea[8].innerText = `${diceQty[8]}D8`;
+//ボーナス・ペナルティ表示
+function bonusUpdate(states) {
+  //diceReset();
+
+  for(let i = 0; i < 2; ++i){
+    if(bonusStates[states][i] === '#777777'){
+      judge.area[i + 2].innerText = '';
+    }
+    judge.box[i].style.cssText = 'background: ' + bonusStates[states][i];
   }
-})
 
-plusDice[6].addEventListener('click', () => {
-  ++diceQty[6];
-  diceQtyArea[6].innerText = `${diceQty[6]}D6`;
-})
-minusDice[6].addEventListener('click', () => {
-  if (diceQty[6] > 1) {
-    --diceQty[6];
-    diceQtyArea[6].innerText = `${diceQty[6]}D6`;
+}
+
+function diceReset(){
+  judge.result.innerText = '';
+  judge.rate.innerText = '';
+  for(let i = 0; i < 4; ++i){
+    judge.area[i].innerText = '';
   }
-})
+}
 
-plusDice[4].addEventListener('click', () => {
-  ++diceQty[4];
-  diceQtyArea[4].innerText = `${diceQty[4]}D4`;
-})
-minusDice[4].addEventListener('click', () => {
-  if (diceQty[4] > 1) {
-    --diceQty[4];
-    diceQtyArea[4].innerText = `${diceQty[4]}D4`;
+//ダイスロールボタン
+function rollButton(face) {
+  resultArea[face].innerText = roll(diceQty[face], face);
+}
+
+//ダイス数ボタン
+function qtyButton(face, fluctuation){
+  diceQty[face] = diceQty[face] + fluctuation;
+
+  if(diceQty[face] === 0){
+    diceQty[face] = 1;
   }
-})
-
-plusDice[3].addEventListener('click', () => {
-  ++diceQty[3];
-  diceQtyArea[3].innerText = `${diceQty[3]}D3`;
-})
-minusDice[3].addEventListener('click', () => {
-  if (diceQty[3] > 1) {
-    --diceQty[3];
-    diceQtyArea[3].innerText = `${diceQty[3]}D3`;
+  if(diceQty[face] === 1000){
+    diceQty[face] = 999;
   }
-})
 
-diceRoll[100].addEventListener('click', () => {
-  result = 0;
-  resultArea[100].innerText = roll(diceQty[100], 100);
-});
+  diceQtyArea[face].innerText = diceQty[face] + 'D' + face
+}
 
-diceRoll[20].addEventListener('click', () => {
-  result = 0;
-  resultArea[20].innerText = roll(diceQty[20], 20);
-});
-
-diceRoll[12].addEventListener('click', () => {
-  result = 0;
-  resultArea[12].innerText = roll(diceQty[12], 12);
-});
-
-diceRoll[10].addEventListener('click', () => {
-  result = 0;
-  resultArea[10].innerText = roll(diceQty[10], 10);
-});
-
-diceRoll[8].addEventListener('click', () => {
-  result = 0;
-  resultArea[8].innerText = roll(diceQty[8], 8);
-});
-
-diceRoll[6].addEventListener('click', () => {
-  result = 0;
-  resultArea[6].innerText = roll(diceQty[6], 6);
-});
-
-diceRoll[4].addEventListener('click', () => {
-  result = 0;
-  resultArea[4].innerText = roll(diceQty[4], 4);
-});
-
-diceRoll[3].addEventListener('click', () => {
-  result = 0;
-  resultArea[3].innerText = roll(diceQty[3], 3);
-});
-
+//ダイスロール関数
 function roll(qty, face) {
+  let result = 0;
+  let log = [];
+
   for(let i = 0; i < qty; i++){
-    result += Math.floor(Math.random() * 1000) % face + 1;
+    log.push(Math.floor(Math.random() * 1000) % face + 1);
   }
+
+  result = log.reduce( (sum, element) => {
+    return sum + element;
+  }, 0);
+
+  console.log(`${qty}D${face}[${log}]=>${result}`);
   return result;
+}
+
+//並び替え関数
+function compareFunc(a, b) {
+  return a - b;
 }
